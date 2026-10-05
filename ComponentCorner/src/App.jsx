@@ -1,9 +1,12 @@
-import { useState } from "react";
-import ProductCard from "./components/ProductCard";
+import { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+
 import Header from "./components/Header";
-import Hero from "./components/Hero";
 import Footer from "./components/Footer";
-import CartItem from "./components/CartItem";
+
+import HomePage from "./pages/HomePage";
+import ProductsPage from "./pages/ProductsPage";
+import CartPage from "./pages/CartPage";
 
 function App() {
   const products = [
@@ -51,7 +54,10 @@ function App() {
     }
   ];
 
-  const [cart, setCart] = useState([]);
+  const [cart, setCart] = useState(() => {
+    const savedCart = localStorage.getItem("componentcorner-cart");
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
 
   const addToCart = (product) => {
     setCart([...cart, product]);
@@ -62,52 +68,53 @@ function App() {
     setCart(cart.filter((product) => product.id !== productId));
   };
 
-  const cartTotal = cart.reduce((total, product) => total + product.price, 0);
+  useEffect(() => {
+    try {
+      localStorage.setItem("componentcorner-cart", JSON.stringify(cart));
+    } catch (error) {
+      console.warn("Could not save cart to localStorage:", error);
+    }
+  }, [cart]);
 
   return (
-    <div>
-      <Header storeName="ComponentCorner" 
-      cartCount={cart.length} 
-      />
-
-      <Hero
-        title="Welcome to ComponentCorner"
-        subtitle="Find the latest electronics at great prices."
-        ctaText="Shop Now"
-      />
-
-      {products.map((product) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          addToCart={addToCart}
+    <BrowserRouter>
+      <div>
+        <Header
+          storeName="ComponentCorner"
+          cartCount={cart.length}
         />
-      ))}
 
-      <h2>Shopping Cart</h2>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
 
-      {cart.length === 0 ? (
-        <p>Your cart is empty.</p>
-      ) : (
-        <>
-          {cart.map((product) => (
-            <CartItem
-              key={product.id}
-              product={product}
-              removeFromCart={removeFromCart}
-            />
-        ))}
+          <Route
+            path="/products"
+            element={
+              <ProductsPage
+                products={products}
+                addToCart={addToCart}
+              />
+            }
+          />
 
-      <h3>Cart Total: ${cartTotal.toFixed(2)}</h3>
-    </>
-  )}
+          <Route
+            path="/cart"
+            element={
+              <CartPage
+                products={cart}
+                removeFromCart={removeFromCart}
+              />
+            }
+          />
+        </Routes>
 
-      <Footer
-        storeName="ComponentCorner"
-        email="support@componentcorner.com"
-        phone="(555) 123-4567"
-      />
-    </div>
+        <Footer
+            storeName="ComponentCorner"
+            email="support@componentcorner.com"
+            phone="(555) 123-4567"
+        />
+      </div>
+    </BrowserRouter>
   );
 }
 
